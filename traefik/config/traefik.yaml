@@ -32,17 +32,16 @@ entryPoints:
   websecure:
     address: :443
     http:
-      middlewares:
-        # - authentik-bouncer@file
-        # - crowdsec-bouncer@file
-        - securityHeaders@file
       tls:
-        certResolver: cloudflare
+        certResolver: letsencrypt
         domains:
           - main: domain.com
             sans:
               - '*.doamin.com'
-
+          - main: domain1.com
+            sans:
+              - '*.doamin1.com'
+# ------------------------------------------------------------------------------------          
 certificatesResolver:
   cloudflre:
     acme:
@@ -53,20 +52,19 @@ certificatesResolver:
       keyType: EC256
       dnsChallenge:
         provider: cloudflare
-        # Used to make sure the dns challenge is propagated to the rights dns servers
         resolvers:
           - "1.1.1.1:53"
           - "1.0.0.1:53"
-
+# ------------------------------------------------------------------------------------ 
 providers:
   providersThrottleDuration: 2s
   file:
-    directory: /etc/traefik/conf/
+    directory: /etc/traefik/ # if watching directory
+    # filename: /etc/traefik/config/config.yaml # if watching file
     watch: true
-#    
+# ------------------------------------------------------------------------------------    
   docker:
     watch: true
     exposedByDefault: false
     # VERRY IMPORTANT
     endpoint: "tcp://dockersocket:2375" # Uncomment if you are using docker socket proxy
-#   
