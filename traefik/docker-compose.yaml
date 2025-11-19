@@ -8,7 +8,7 @@ services:
       - TUNNEL_TOKEN=your cloudflare tunnel token
     command: tunnel --no-autoupdate run
     networks:
-      - outside
+      - proxy
     restart: unless-stopped
 
   dockersocket:
@@ -17,7 +17,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - inside
+      - proxy
     environment:
       CONTAINERS: 1
       POST: 0
@@ -28,21 +28,18 @@ services:
     image: traefik:latest
     container_name: traefik
     ports:
-      # -- Internal Network - all dockers
-      - Your-ip:80:80   # http
-      - Your-ip:443:443 # https
-      # -- External Network = connection to firewall
-      - Your-ip:81:81
-      - Your-ip:444:444
-      #----TCP Network----#
-#      - Your-ip:22001:22000   # WIP
-      # -- Enable Dashboard, don't do in production
-      - Your-ip:8080:8080
+      - Your-ip:80:80     # http
+      - Your-ip:443:443   # https
+      - Your-ip:8080:8080 # Enable Dashboard, don't do in production
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro  # Static config: main config
-      - ./config/rules/:/etc/traefik/rules/ # Routers, Services, Middlewares, Certificates(Stores options)
-      - ./config/certs/:/etc/traefik/certs/ # Certs directory 
+      - /traefik/config:/etc/traefik/ # Static config: main config
+      - /traefik/config/certs:/etc/traefik/letsencrypt/
+    labels:
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.example.com`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=<username>:<password>" # use passwd
     environment:
       DOCKER_HOST: dockersocket # External docker socket as docker
       CF_API_EMAIL: mail@mail.com
@@ -54,14 +51,9 @@ services:
       dockersocket:
         condition: service_started
     networks:
-      - inside
-      - outside
+      - proxy
     restart: unless-stopped
 
 networks:
-# cloudflare to traefik
-  outside:
-    external: true
-# traefik to dockersocket
-  inside:
+  proxy:
     external: true
