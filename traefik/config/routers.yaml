@@ -1,0 +1,15 @@
+http:
+  routers:
+    nextcloud:
+      rule: "Host(`nextcloud.domain.com`)"
+      service: nextcloud
+      middlewares:
+        - securityHeaders
+        - rate-limit
+
+  services:
+    nextcloud:
+      loadBalancer:
+        servers:
+          - url: "https://<server-ip>:<app port>"
+        passHostHeader: true
